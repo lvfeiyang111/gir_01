@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:context="http://www.springframework.org/schema/context" xmlns:tx="http://www.springframework.org/schema/tx"
+       xmlns:aop="http://www.springframework.org/schema/aop"
+       xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context https://www.springframework.org/schema/context/spring-context.xsd http://www.springframework.org/schema/tx http://www.springframework.org/schema/tx/spring-tx.xsd http://www.springframework.org/schema/aop https://www.springframework.org/schema/aop/spring-aop.xsd">
+
+    <!--spring配置文件： 声明service，dao，工具类等对象-->
+
+    <context:property-placeholder location="classpath:conf/jdbc.properties" />
+
+    <!--声明数据源，连接数据库-->
+    <bean id="dataSource" class="com.alibaba.druid.pool.DruidDataSource"
+          init-method="init" destroy-method="close">
+        <property name="url" value="${jdbc.url}" />
+        <property name="username" value="${jdbc.username}" />
+        <property name="password" value="${jdbc.password}" />
+    </bean>
+
+    <!--SqlSessionFactoryBean创建SqlSessionFactory-->
+    <bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+        <property name="dataSource" ref="dataSource" />
+        <property name="configLocation"  value="classpath:conf/mybatis.xml" />
+    </bean>
+
+    <!--声明mybatis的扫描器，创建dao对象-->
+    <bean class="org.mybatis.spring.mapper.MapperScannerConfigurer">
+        <property name="sqlSessionFactoryBeanName" value="sqlSessionFactory" />
+        <property name="basePackage" value="com.lfy.dao" />
+    </bean>
+
+    <!--声明service的注解@Service所在的包名位置-->
+    <context:component-scan base-package="com.lfy.service" />
+    <tx:annotation-driven transaction-manager="transactionManager"/>
+
+    <!--事务配置：注解的配置， aspectj的配置-->
+    <bean id="transactionManager" class="org.springframework.jdbc.datasource.DataSourceTransactionManager">
+        <property name="dataSource" ref="dataSource"/>
+    </bean>
+<!--    事务事务的切面-->
+    	<tx:advice id="myadvice" transaction-manager="transactionManager">
+            <tx:attributes>
+                <!--查询-->
+                <tx:method name="select*" read-only="true"/>
+                <tx:method name="find*" read-only="true"/>
+                <tx:method name="get*" read-only="true"/>
+                <tx:method name="search*" read-only="true"/>
+                <!--增加-->
+                <tx:method name="insert*" propagation="REQUIRED"/>
+                <tx:method name="save*" propagation="REQUIRED"/>
+                <tx:method name="add*" propagation="REQUIRED"/>
+                <!--=删除-->
+                <tx:method name="delete*" propagation="REQUIRED"/>
+                <tx:method name="remove*" propagation="REQUIRED"/>
+                <tx:method name="clear*" propagation="REQUIRED"/>
+                <!--更新-->
+                <tx:method name="modify*" propagation="REQUIRED"/>
+                <tx:method name="change*" propagation="REQUIRED"/>
+                <tx:method name="set*" propagation="REQUIRED"/>
+                <tx:method name="*" propagation="SUPPORTS"/>
+            </tx:attributes>
+        </tx:advice>
+        <!--事务切入点-->
+        <aop:config>
+            <aop:pointcut id="mypointcut" expression="execution(* com.lfy.service.*.*(..))"/>
+            <aop:advisor advice-ref="myadvice" pointcut-ref="mypointcut"/>
+        </aop:config>
+
+
+    <!--配置文件上传使用解析器-->
+
+</beans>
